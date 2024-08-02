@@ -11,6 +11,7 @@ import {
   setDoc,
   deleteDoc,
   getDoc,
+  where,
 } from 'firebase/firestore'
 
 const style = {
@@ -32,10 +33,12 @@ export default function Home() {
   const [inventory, setInventory] = useState([])
   const [open, setOpen] = useState(false)
   const [itemName, setItemName] = useState('')
-  const [quantity, setQuantity] = useState('')
+  const [quantity, setQuantity] = useState(1)
+  const [search, setQuery] = useState('')
 
   const updateInventory = async () => {
-    const snapshot = query(collection(firestore, 'inventory'))
+    const snapshot = query(collection(firestore, 'inventory'), where('name', '>=', search), where('name', '<=', search + '~'))
+    console.log(search)
     const docs = await getDocs(snapshot)
     const inventoryList = []
     docs.forEach((doc) => {
@@ -57,9 +60,9 @@ export default function Home() {
     const docSnap = await getDoc(docRef)
     if (docSnap.exists()) {
       const { quantity } = docSnap.data()
-      await setDoc(docRef, { quantity: quantity + 1 })
+      await setDoc(docRef, { name: docRef.id, quantity: quantity + 1 })
     } else {
-      await setDoc(docRef, { quantity: 1 })
+      await setDoc(docRef, { name: docRef.id, quantity: 1 })
     }
     await updateInventory()
   }
@@ -69,9 +72,9 @@ export default function Home() {
     const docSnap = await getDoc(docRef)
     if (docSnap.exists()) {
       const { quantity } = docSnap.data()
-      await setDoc(docRef, { quantity: quantity + count })
+      await setDoc(docRef, {  name: docRef.id, quantity: quantity + count })
     } else {
-      await setDoc(docRef, { quantity: count })
+      await setDoc(docRef, {  name: docRef.id, quantity: count })
     }
     await updateInventory()
   }
@@ -84,7 +87,7 @@ export default function Home() {
       if (quantity === 1) {
         await deleteDoc(docRef)
       } else {
-        await setDoc(docRef, { quantity: quantity - 1 })
+        await setDoc(docRef, { name: docRef.id, quantity: quantity - 1 })
       }
     }
     await updateInventory()
@@ -127,15 +130,17 @@ export default function Home() {
               label="Count"
               variant="outlined"
               fullWidth
+              defaultValue='1'
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
             />
             <Button
               variant="outlined"
               onClick={() => {
-                setCount(itemName, quantity)
+                setCount(itemName, quantity > 0 ? quantity : 1)
+                console.log(quantity > 0)
                 setItemName('')
-                setQuantity('')
+                setQuantity(1)
                 handleClose()
               }}
             >
@@ -144,9 +149,29 @@ export default function Home() {
           </Stack>
         </Box>
       </Modal>
+
       <Button variant="contained" onClick={handleOpen}>
         Add New Item
       </Button>
+
+      <Stack direction={'row'} spacing={2}>
+        <TextField
+              id="outlined-basic"
+              label="Search"
+              variant="outlined"
+              width='800px'
+              value={search}
+              onChange={(e) => setQuery(e.target.value)
+              }
+            />
+        <Button 
+          variant='outlined'
+          onClick={() => updateInventory()}
+          >
+          Search
+        </Button>
+      </Stack>
+      
       <Box border={'1px solid #333'}>
         <Box
           width="800px"
