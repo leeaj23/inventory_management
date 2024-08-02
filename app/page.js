@@ -32,6 +32,7 @@ export default function Home() {
   const [inventory, setInventory] = useState([])
   const [open, setOpen] = useState(false)
   const [itemName, setItemName] = useState('')
+  const [quantity, setQuantity] = useState('')
 
   const updateInventory = async () => {
     const snapshot = query(collection(firestore, 'inventory'))
@@ -59,6 +60,18 @@ export default function Home() {
       await setDoc(docRef, { quantity: quantity + 1 })
     } else {
       await setDoc(docRef, { quantity: 1 })
+    }
+    await updateInventory()
+  }
+
+  const setCount = async (item, count) => {
+    const docRef = doc(collection(firestore, 'inventory'), item)
+    const docSnap = await getDoc(docRef)
+    if (docSnap.exists()) {
+      const { quantity } = docSnap.data()
+      await setDoc(docRef, { quantity: quantity + count })
+    } else {
+      await setDoc(docRef, { quantity: count })
     }
     await updateInventory()
   }
@@ -109,11 +122,20 @@ export default function Home() {
               value={itemName}
               onChange={(e) => setItemName(e.target.value)}
             />
+            <TextField
+              id="outlined-basic"
+              label="Count"
+              variant="outlined"
+              fullWidth
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+            />
             <Button
               variant="outlined"
               onClick={() => {
-                addItem(itemName)
+                setCount(itemName, quantity)
                 setItemName('')
+                setQuantity('')
                 handleClose()
               }}
             >
